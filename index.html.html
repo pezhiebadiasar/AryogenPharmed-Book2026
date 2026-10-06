@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>دومین دوره نمایشکاه کتاب آریوژن فارمد</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');
+*{box-sizing:border-box}
+body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:radial-gradient(circle at 50% 15%,#273b75 0,#111a3d 45%,#080d21 100%);color:#fff;min-height:100vh}
+.container{width:min(1180px,94%);margin:auto;padding:28px 0 45px}
+header{text-align:center;margin-bottom:24px}
+header h1{font-size:clamp(25px,4vw,42px);margin:0 0 7px;font-weight:900}
+header p{margin:0;color:#bfc9ea}
+.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:stretch}
+.card{background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.13);box-shadow:0 20px 55px rgba(0,0,0,.3);backdrop-filter:blur(14px);border-radius:25px;padding:25px}
+.wheel-area{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:650px}
+.wheel-wrap{position:relative;width:min(520px,82vw);aspect-ratio:1}
+canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))}
+.pointer{position:absolute;top:-7px;left:50%;transform:translateX(-50%);z-index:3;width:0;height:0;border-left:19px solid transparent;border-right:19px solid transparent;border-top:42px solid #fff;filter:drop-shadow(0 4px 4px #0008)}
+.center-btn{margin-top:22px;border:0;border-radius:16px;padding:15px 34px;font-family:inherit;font-size:18px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#ffd84d,#ff9e1c);color:#251900;box-shadow:0 10px 25px #ffad2245;transition:.2s}
+.center-btn:hover{transform:translateY(-2px);filter:brightness(1.05)}
+.center-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.status{margin-top:13px;color:#bfc9ea;font-size:13px}
+.side h2{margin:0 0 18px;font-size:21px}
+.prizes{display:grid;gap:11px}
+.prize{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);transition:.25s}
+.prize.zero{opacity:.38}
+.prize .name{font-weight:800}.prize .amount{color:#ffd85b;font-weight:900}
+.stock{min-width:100px;text-align:center;padding:7px 10px;border-radius:10px;background:#111a3a;color:#dce4ff;font-size:13px}
+.controls{margin-top:24px;border-top:1px solid #ffffff15;padding-top:20px}
+button.secondary{font-family:inherit;border:1px solid #ffffff20;background:#ffffff0d;color:#fff;padding:11px 15px;border-radius:12px;cursor:pointer}
+button.secondary:hover{background:#ffffff17}
+.history{margin-top:24px}
+.history-list{max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.history-item{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;background:#ffffff08;border-radius:11px;font-size:12px;color:#dbe2fa}
+.empty{color:#8290b8;text-align:center;padding:18px}
+.modal{position:fixed;inset:0;background:rgba(3,7,20,.78);display:none;align-items:center;justify-content:center;z-index:20;padding:20px}
+.modal.show{display:flex}
+.modal-box{width:min(450px,95%);text-align:center;background:linear-gradient(145deg,#202f64,#111a3d);border:1px solid #ffffff20;border-radius:27px;padding:35px;box-shadow:0 30px 80px #0008}
+.trophy{font-size:62px;margin-bottom:7px}
+.modal-box h2{margin:0;color:#fff;font-size:25px}
+.win{font-size:42px;font-weight:900;color:#ffd95a;margin:15px 0}
+.modal-box p{color:#bdc8e9;margin:0 0 22px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.wheel-area{min-height:auto}.card{padding:18px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>🎁 دومین دوره نمایشکاه کتاب آریوژن فارمد </h1>
+<p>روی دکمه بزنید، گردونه را بچرخانید و جایزه خود را ببرید!</p>
+</header>
+
+<div class="layout">
+<section class="card wheel-area">
+ <div class="wheel-wrap">
+ <div class="pointer"></div>
+ <canvas id="wheel" width="900" height="900"></canvas>
+ </div>
+ <button id="spinBtn" class="center-btn">🎡 چرخش گردونه</button>
+ <div id="status" class="status">مجموع بن‌های باقی‌مانده: ۴۲۰<br>تعداد چرخش باقی‌مانده: ۴۲۰</div>
+</section>
+
+<aside class="card side">
+<h2>🎟️ موجودی بن‌ها</h2>
+<div id="prizes" class="prizes"></div>
+
+<div class="controls">
+<button class="secondary" id="resetBtn">↻ بازگردانی موجودی اولیه</button>
+</div>
+
+<div class="history">
+<h2>🏆 برندگان این نشست</h2>
+<div id="history" class="history-list"><div class="empty">هنوز قرعه‌کشی انجام نشده است.</div></div>
+</div>
+</aside>
+</div>
+</div>
+
+<div id="modal" class="modal">
+<div class="modal-box">
+<div class="trophy">🏆</div>
+<h2>تبریک! شما برنده شدید</h2>
+<div id="winAmount" class="win"></div>
+<p>این بن از موجودی کم شد و در قرعه‌کشی‌های بعدی لحاظ نمی‌شود.</p>
+<button class="center-btn" id="closeModal">ادامه</button>
+</div>
+</div>
+
+<script>
+const initial = [
+ {amount:100000, label:"۱۰۰ هزار تومان", stock:220, cls:"#25c7a5"},
+ {amount:300000, label:"۳۰۰ هزار تومان", stock:120, cls:"#4285f4"},
+ {amount:500000, label:"۵۰۰ هزار تومان", stock:50, cls:"#9b59ff"},
+ {amount:700000, label:"۷۰۰ هزار تومان", stock:20, cls:"#f39c3d"},
+ {amount:1000000,label:"۱ میلیون تومان", stock:10, cls:"#ef536f"}
+];
+let prizes = JSON.parse(localStorage.getItem("bookWheelStock") || "null") || structuredClone(initial);
+let history = JSON.parse(localStorage.getItem("bookWheelHistory") || "[]");
+let rotation=0, spinning=false;
+
+const fa=n=>n.toLocaleString("fa-IR");
+const canvas=document.getElementById("wheel"), ctx=canvas.getContext("2d");
+
+function total(){return prizes.reduce((s,p)=>s+p.stock,0)}
+function save(){localStorage.setItem("bookWheelStock",JSON.stringify(prizes));localStorage.setItem("bookWheelHistory",JSON.stringify(history))}
+function render(){
+ const box=document.getElementById("prizes");
+ box.innerHTML=prizes.map((p,i)=>`<div class="prize ${p.stock===0?'zero':''}">
+ <div><div class="name">${p.label}</div><div class="amount">${fa(p.amount)} تومان</div></div>
+ <div class="stock">${fa(p.stock)} عدد</div>
+ </div>`).join("");
+ document.getElementById("status").innerHTML=`مجموع بن‌های باقی‌مانده: ${fa(total())}<br>تعداد چرخش باقی‌مانده: ${fa(total())}`;
+ document.getElementById("spinBtn").disabled=total()===0 || spinning;
+ const h=document.getElementById("history");
+ h.innerHTML=history.length?history.slice().reverse().map(x=>`<div class="history-item"><span>${x.time}</span><b>${x.label}</b></div>`).join(""):`<div class="empty">هنوز قرعه‌کشی انجام نشده است.</div>`;
+ drawWheel();
+}
+
+function drawWheel(){
+ const cx=450,cy=450,r=405;
+ ctx.clearRect(0,0,900,900);
+
+ // ظاهر گردونه همیشه ۵ قسمت مساوی دارد.
+ // احتمال واقعی برد در تابع pick() همچنان بر اساس موجودی محاسبه می‌شود.
+ const visible=prizes;
+ const count=visible.length;
+ const sweep=2*Math.PI/count;
+ let a=-Math.PI/2;
+
+ visible.forEach((p,i)=>{
+ ctx.beginPath();
+ ctx.moveTo(cx,cy);
+ ctx.arc(cx,cy,r,a,a+sweep);
+ ctx.closePath();
+
+ ctx.fillStyle=p.stock>0 ? p.cls : "#68708a";
+ ctx.fill();
+ ctx.strokeStyle="#ffffff66";
+ ctx.lineWidth=5;
+ ctx.stroke();
+
+ ctx.save();
+ ctx.translate(cx,cy);
+ ctx.rotate(a+sweep/2);
+ ctx.textAlign="right";
+ ctx.fillStyle="#fff";
+ ctx.font="900 30px Vazirmatn, Tahoma";
+ ctx.shadowColor="#0009";
+ ctx.shadowBlur=7;
+ ctx.fillText(p.label,355,10);
+
+ if(p.stock===0){
+ ctx.fillStyle="#ffffffaa";
+ ctx.font="700 20px Vazirmatn, Tahoma";
+ ctx.fillText("تمام شد",355,42);
+ }
+ ctx.restore();
+
+ a+=sweep;
+ });
+
+ ctx.beginPath();
+ ctx.arc(cx,cy,76,0,Math.PI*2);
+ ctx.fillStyle="#111a3d";
+ ctx.fill();
+ ctx.strokeStyle="#fff";
+ ctx.lineWidth=7;
+ ctx.stroke();
+
+ ctx.fillStyle="#ffd85a";
+ ctx.font="900 28px Vazirmatn, Tahoma";
+ ctx.textAlign="center";
+ ctx.fillText("شانس",cx,cy+10);
+}
+function pick(){
+ const sum=total(); let n=Math.random()*sum;
+ for(const p of prizes){if(n<p.stock)return p;n-=p.stock}
+ return prizes.find(p=>p.stock>0);
+}
+function spin(){
+ // هر بن دقیقاً یک بار قابل برنده‌شدن است؛ بنابراین حداکثر تعداد چرخش = مجموع بن‌ها
+ if(spinning || total() <= 0) return;
+ spinning=true;document.getElementById("spinBtn").disabled=true;
+ const winner=pick();
+
+ // روی گردونه، هر جایزه دقیقاً یک بخش مساوی دارد.
+ // بنابراین نتیجه انتخاب‌شده باید دقیقاً روی همان بخش قرار بگیرد.
+ const winnerIndex=prizes.indexOf(winner);
+ const segmentSize=360/prizes.length;
+
+ // زاویه مرکز هر بخش در حالت اولیه:
+ // بخش اول از 270° تا 342° است، بنابراین مرکز آن -54° است.
+ // برای قرار گرفتن مرکز بخش برنده دقیقاً زیر فلشِ بالای گردونه،
+ // باید زاویه چرخش برابر منفیِ زاویه مرکز همان بخش باشد.
+ const targetAngle=-(winnerIndex*segmentSize + segmentSize/2);
+
+ const current=((rotation%360)+360)%360;
+ const normalizedTarget=((targetAngle%360)+360)%360;
+ let delta=(normalizedTarget-current+360)%360;
+ delta+=360*(5+Math.floor(Math.random()*3));
+ rotation+=delta;
+ canvas.style.transition="transform 5s cubic-bezier(.12,.75,.16,1)";
+ canvas.style.transform=`rotate(${rotation}deg)`;
+ setTimeout(()=>{
+ // همان بخشی که برای توقف انتخاب شده، نتیجه نهایی است.
+ // این کار باعث می‌شود متن پاپ‌آپ و محل توقف گردونه هیچ‌وقت از هم جدا نشوند.
+ const finalWinner=prizes[winnerIndex];
+ finalWinner.stock--;
+ const now=new Date().toLocaleTimeString("fa-IR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+ history.push({label:finalWinner.label,time:now});
+ save();
+ // ابتدا وضعیت چرخش را آزاد می‌کنیم، سپس رندر می‌کنیم
+ spinning=false;
+ render();
+ document.getElementById("winAmount").textContent=prizes[winnerIndex].label;
+ document.getElementById("modal").classList.add("show");
+ },5100);
+}
+document.getElementById("spinBtn").onclick=spin;
+document.getElementById("closeModal").onclick=()=>document.getElementById("modal").classList.remove("show");
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")e.currentTarget.classList.remove("show")};
+document.getElementById("resetBtn").onclick=()=>{
+ if(confirm("موجودی همه بن‌ها و تاریخچه برندگان به حالت اولیه برگردد؟")){
+ prizes=structuredClone(initial);history=[];rotation=0;
+ canvas.style.transition="none";canvas.style.transform="rotate(0deg)";
+ save();render();
+ }
+};
+render();
+</script>
+</body>
+</html>
